@@ -1,200 +1,222 @@
-import networkx as nx
-import powerlaw as pl
-import numpy as np
+# igraph submodules
+from igraph import Graph
+from igraph import statistics
 
 from os import path
 from matplotlib import pyplot as pp
+
+# import and config plaw
+import powerlaw as pl
+import numpy as np
+np.seterr(divide='ignore', invalid='ignore')
 
 
 #
 # function definitions
 #
 
-def moment(graph, which):
+def stat_moment(graph, which):
     measurement = 0
-    for node in nx.nodes(graph):
-        measurement += nx.degree(graph, node) ** which
-    return measurement / nx.number_of_nodes(graph)
+    for node in graph.vs:
+        measurement += graph.degree(node) ** which
+    return measurement / len(graph.vs)
+
+
+def shortest_path_avg(graph):
+    paths = graph.shortest_paths()
+    n_paths = sum([len(x) for x in paths])
+    n_steps = sum([sum(path) for path in paths])
+    return n_steps / n_paths
 
 
 def shortest_path_dist(graph):
-    # remember, ints from strings!!!
-    nodes = list(map(int, nx.nodes(graph)))
-    freqs = np.zeros(nx.diameter(graph)+1, dtype=int)
-    mem_dims = max(nodes) + 1  # memorize repeated data
-    memory = np.zeros((mem_dims, mem_dims), dtype=int) - 1
-    for node1 in nodes:
-        for node2 in nodes:
-            if node1 == node2:
-                continue
-            if memory[node1, node2] > -1:
-                freqs[memory[node1, node2]] += 1
-            else:
-                length = int(nx.shortest_path_length(graph, source=str(node1), target=str(node2)))
-                memory[node1, node2] = length
-                memory[node2, node1] = length
+    dims = graph.diameter()+1
+    bins = np.linspace(0, dims, dims+1)
+    freqs = np.zeros(dims, dtype=int)
+    paths = graph.shortest_paths()
+    for na in graph.vs:
+        for nb in graph.vs:
+            if na.index != nb.index:
+                length = paths[na.index][nb.index]
                 freqs[length] += 1
-    return freqs
+    return bins, freqs
+
+
+#
+# what's gonna run?
+#
+
+magic_number = 9
 
 
 #
 # read giant components
 #
 
-print('=> reading networks...', end='')
+if magic_number & 1 > 0:
+    print('=> reading networks... ', end='', flush=True)
 
-all_graphs = {}
-all_giants = {}
+    all_giants = {}
+    current_path = path.join('networks', 'hamster.txt_awkd')
+    with open(current_path, 'rb') as graph_file:
+        graph = Graph.Read_Edgelist(graph_file, directed=False)
+        all_giants['hamster'] = graph.components().giant()
 
-current_path = path.join('networks', 'hamster.txt')
-with open(current_path, 'rb') as graph_file:
-    graph = nx.read_edgelist(graph_file)
-    all_graphs['hamster'] = graph
-    all_giants['hamster'] = max(nx.connected_component_subgraphs(graph), key=len)
+    current_path = path.join('networks', 'euroroad.txt_awkd')
+    with open(current_path, 'rb') as graph_file:
+        graph = Graph.Read_Edgelist(graph_file, directed=False)
+        all_giants['euroroad'] = graph.components().giant()
 
-current_path = path.join('networks', 'euroroad.txt')
-with open(current_path, 'rb') as graph_file:
-    graph = nx.read_edgelist(graph_file)
-    all_graphs['euroroad'] = graph
-    all_giants['euroroad'] = max(nx.connected_component_subgraphs(graph), key=len)
+    current_path = path.join('networks', 'us-airports.txt_awkd')
+    with open(current_path, 'rb') as graph_file:
+        graph = Graph.Read_Ncol(graph_file, names=False, weights=True, directed=False)
+        all_giants['us-airports'] = graph.components().giant()
 
-current_path = path.join('networks', 'us-airports.txt')
-with open(current_path, 'rb') as graph_file:
-    graph = nx.read_weighted_edgelist(graph_file)
-    all_graphs['us-airports'] = graph
-    all_giants['us-airports'] = max(nx.connected_component_subgraphs(graph), key=len)
+    current_path = path.join('networks', 'us-powergrid.txt_awkd')
+    with open(current_path, 'rb') as graph_file:
+        graph = Graph.Read_Edgelist(graph_file, directed=False)
+        all_giants['us-powergrid'] = graph.components().giant()
 
-current_path = path.join('networks', 'us-powergrid.txt')
-with open(current_path, 'rb') as graph_file:
-    graph = nx.read_weighted_edgelist(graph_file)
-    all_graphs['us-powergrid'] = graph
-    all_giants['us-powergrid'] = max(nx.connected_component_subgraphs(graph), key=len)
-
-print(' done')
+    print('done')
 
 #
 # degree distributions
 #
 
-print('=> degree distributions, p-law alphas...')
+if magic_number & 2 > 0:
+    print('=> degree distributions, p-law alphas... ', flush=True)
 
-all_pdfs = {}
+    all_dds = {}
+    all_dds['hamster'] = list(map(lambda x: x[2], all_giants['hamster'].degree_distribution().bins()))
+    print('  hamster:\n\tpowerlaw alpha: {:.4f}'.format(pl.Fit(all_dds['hamster']).alpha))
+    print('\t  igraph alpha: {:.4f}'.format(statistics.power_law_fit(all_dds['hamster']).alpha))
 
-n_nodes = nx.number_of_nodes(all_giants['hamster'])
-all_pdfs['hamster'] = list(map(lambda x: x/n_nodes, nx.degree_histogram(all_giants['hamster'])))
-n_nodes = nx.number_of_nodes(all_giants['euroroad'])
-all_pdfs['euroroad'] = list(map(lambda x: x/n_nodes, nx.degree_histogram(all_giants['euroroad'])))
-n_nodes = nx.number_of_nodes(all_giants['us-airports'])
-all_pdfs['us-airports'] = list(map(lambda x: x/n_nodes, nx.degree_histogram(all_giants['us-airports'])))
-n_nodes = nx.number_of_nodes(all_giants['us-powergrid'])
-all_pdfs['us-powergrid'] = list(map(lambda x: x/n_nodes, nx.degree_histogram(all_giants['us-powergrid'])))
+    all_dds['euroroad'] = list(map(lambda x: x[2], all_giants['euroroad'].degree_distribution().bins()))
+    print('  euroroad:\n\tpowerlaw alpha: {:.4f}'.format(pl.Fit(all_dds['euroroad']).alpha))
+    print('\t  igraph alpha: {:.4f}'.format(statistics.power_law_fit(all_dds['euroroad']).alpha))
 
-all_fits = {}
+    all_dds['us-airports'] = list(map(lambda x: x[2], all_giants['us-airports'].degree_distribution().bins()))
+    print('  us-airports:\n\tpowerlaw alpha: {:.4f}'.format(pl.Fit(all_dds['us-airports']).alpha))
+    print('\t  igraph alpha: {:.4f}'.format(statistics.power_law_fit(all_dds['us-airports']).alpha))
 
-all_fits['hamster'] = pl.Fit(all_pdfs['hamster'])
-print('  hamster:\n\talpha:{:.4f}'.format(all_fits['hamster'].alpha))
-all_fits['euroroad'] = pl.Fit(all_pdfs['euroroad'])
-print('  euroroad:\n\talpha:{:.4f}'.format(all_fits['euroroad'].alpha))
-all_fits['us-airports'] = pl.Fit(all_pdfs['us-airports'])
-print('  us-airports:\n\talpha:{:.4f}'.format(all_fits['us-airports'].alpha))
-all_fits['us-powergrid'] = pl.Fit(all_pdfs['us-powergrid'])
-print('  us-powergrid:\n\talpha:{:.4f}'.format(all_fits['us-powergrid'].alpha))
+    all_dds['us-powergrid'] = list(map(lambda x: x[2], all_giants['us-powergrid'].degree_distribution().bins()))
+    print('  us-powergrid:\n\tpowerlaw alpha: {:.4f}'.format(pl.Fit(all_dds['us-powergrid']).alpha))
+    print('\t  igraph alpha: {:.4f}'.format(statistics.power_law_fit(all_dds['us-powergrid']).alpha))
 
-print('done')
+    pp.title('degree distributions')
+    p1, = pp.loglog(all_dds['hamster'], 's', label='hamster')
+    p2, = pp.loglog(all_dds['euroroad'], 'o', label='euroroad')
+    p3, = pp.loglog(all_dds['us-airports'], 'd', label='us-airports')
+    p4, = pp.loglog(all_dds['us-powergrid'], 'p', label='us-powergrid')
+    # pp.legend(bbox_to_anchor=(1.05,1), loc=2, borderaxespad=0.)
+    pp.legend(handles=[p1, p2, p3, p4], loc=1)
+    pp.grid(True)
+    pp.show()
+    pp.clf()
+
+    print('done')
 
 
 #
-# collect measures
+# assorted measurements
 #
 
-'''
-table_data = np.zeros((7, 4))
-col_labels = ('Hamster', 'Euroroad', 'US-airports', 'US-powergrid')
-row_labels = ('NumberOfNodes', '<k>', '<k²>', '<cci>', 'Transitivity', '<ShortestPaths>', 'Diameter')
+if magic_number & 4 > 0:
+    print('=> assorted measurements... ', end='', flush=True)
 
-table_data[0,0] = nx.number_of_nodes(all_giants['hamster'])
-table_data[0,1] = nx.number_of_nodes(all_giants['euroroad'])
-table_data[0,2] = nx.number_of_nodes(all_giants['us-airports'])
-table_data[0,3] = nx.number_of_nodes(all_giants['us-powergrid'])
+    table_data = np.zeros((7, 4))
+    col_labels = ('Hamster', 'Euroroad', 'US-airports', 'US-powergrid')
+    row_labels = ('NumberOfNodes', 'MeanDegree', '2ndStatMoment',
+                  'TransitivityLocalAvg', 'TransitivityGlobal',
+                  'ShortestPathAvg', 'Diameter')
 
-table_data[1,0] = moment(all_giants['hamster'], 1)
-table_data[1,1] = moment(all_giants['euroroad'], 1)
-table_data[1,2] = moment(all_giants['us-airports'], 1)
-table_data[1,3] = moment(all_giants['us-powergrid'], 1)
+    table_data[0,0] = len(all_giants['hamster'].vs)
+    table_data[0,1] = len(all_giants['euroroad'].vs)
+    table_data[0,2] = len(all_giants['us-airports'].vs)
+    table_data[0,3] = len(all_giants['us-powergrid'].vs)
 
-table_data[2,0] = moment(all_giants['hamster'], 2)
-table_data[2,1] = moment(all_giants['euroroad'], 2)
-table_data[2,2] = moment(all_giants['us-airports'], 2)
-table_data[2,3] = moment(all_giants['us-powergrid'], 2)
+    table_data[1,0] = '{:.4f}'.format(stat_moment(all_giants['hamster'], 1))
+    table_data[1,1] = '{:.4f}'.format(stat_moment(all_giants['euroroad'], 1))
+    table_data[1,2] = '{:.4f}'.format(stat_moment(all_giants['us-airports'], 1))
+    table_data[1,3] = '{:.4f}'.format(stat_moment(all_giants['us-powergrid'], 1))
 
-table_data[3,0] = nx.average_clustering(all_giants['hamster'])
-table_data[3,1] = nx.average_clustering(all_giants['euroroad'])
-table_data[3,2] = nx.average_clustering(all_giants['us-airports'])
-table_data[3,3] = nx.average_clustering(all_giants['us-powergrid'])
+    table_data[2,0] = '{:.4f}'.format(stat_moment(all_giants['hamster'], 2))
+    table_data[2,1] = '{:.4f}'.format(stat_moment(all_giants['euroroad'], 2))
+    table_data[2,2] = '{:.4f}'.format(stat_moment(all_giants['us-airports'], 2))
+    table_data[2,3] = '{:.4f}'.format(stat_moment(all_giants['us-powergrid'], 2))
 
-table_data[4,0] = nx.transitivity(all_giants['hamster'])
-table_data[4,1] = nx.transitivity(all_giants['euroroad'])
-table_data[4,2] = nx.transitivity(all_giants['us-airports'])
-table_data[4,3] = nx.transitivity(all_giants['us-powergrid'])
+    table_data[3,0] = '{:.4f}'.format(all_giants['hamster'].transitivity_avglocal_undirected())
+    table_data[3,1] = '{:.4f}'.format(all_giants['euroroad'].transitivity_avglocal_undirected())
+    table_data[3,2] = '{:.4f}'.format(all_giants['us-airports'].transitivity_avglocal_undirected())
+    table_data[3,3] = '{:.4f}'.format(all_giants['us-powergrid'].transitivity_avglocal_undirected())
 
-table_data[5,0] = nx.average_shortest_path_length(all_giants['hamster'])
-table_data[5,1] = nx.average_shortest_path_length(all_giants['euroroad'])
-table_data[5,2] = nx.average_shortest_path_length(all_giants['us-airports'])
-table_data[5,3] = nx.average_shortest_path_length(all_giants['us-powergrid'])
+    table_data[4,0] = '{:.4f}'.format(all_giants['hamster'].transitivity_undirected())
+    table_data[4,1] = '{:.4f}'.format(all_giants['euroroad'].transitivity_undirected())
+    table_data[4,2] = '{:.4f}'.format(all_giants['us-airports'].transitivity_undirected())
+    table_data[4,3] = '{:.4f}'.format(all_giants['us-powergrid'].transitivity_undirected())
 
-table_data[6,0] = nx.diameter(all_giants['hamster'])
-table_data[6,1] = nx.diameter(all_giants['euroroad'])
-table_data[6,2] = nx.diameter(all_giants['us-airports'])
-table_data[6,3] = nx.diameter(all_giants['us-powergrid'])
+    table_data[5,0] = '{:.4f}'.format(shortest_path_avg(all_giants['hamster']))
+    table_data[5,1] = '{:.4f}'.format(shortest_path_avg(all_giants['euroroad']))
+    table_data[5,2] = '{:.4f}'.format(shortest_path_avg(all_giants['us-airports']))
+    table_data[5,3] = '{:.4f}'.format(shortest_path_avg(all_giants['us-powergrid']))
 
-pp.table(cellText=table_data, rowLabels=row_labels, colLabels=col_labels, loc='center')
-pp.axis('tight')
-pp.axis('off')
-pp.show()
-pp.clf()
-'''
+    table_data[6,0] = all_giants['hamster'].diameter(directed=False)
+    table_data[6,1] = all_giants['euroroad'].diameter(directed=False)
+    table_data[6,2] = all_giants['us-airports'].diameter(directed=False)
+    table_data[6,3] = all_giants['us-powergrid'].diameter(directed=False)
 
-'''
-pp.title('degree probability distributions')
-p1, = pp.loglog(all_pdfs['hamster'], 'rs', label='hamster')
-p2, = pp.loglog(all_pdfs['euroroad'], 'go', label='euroroad')
-p3, = pp.loglog(all_pdfs['us-airports'], 'bd', label='us-airports')
-p4, = pp.loglog(all_pdfs['us-powergrid'], 'yp', label='us-powergrid')
-#pp.legend(bbox_to_anchor=(1.05,1), loc=2, borderaxespad=0.)
-pp.legend(handles=[p1, p2, p3, p4], loc=1)
-pp.grid(True)
-pp.show()
-pp.clf()
-'''
+    pp.table(cellText=table_data, rowLabels=row_labels, colLabels=col_labels, loc='center')
+    pp.axis('tight')
+    pp.axis('off')
+    pp.show()
+    pp.clf()
 
-'''
-pp.title('shortest path distributions')
-p1, = pp.plot(shortest_path_dist(all_giants['hamster']), 'rs', label='hamster')
-p2, = pp.plot(shortest_path_dist(all_giants['euroroad']), 'go', label='euroroad')
-p3, = pp.plot(shortest_path_dist(all_giants['us-airports']), 'bd', label='us-airports')
-p4, = pp.plot(shortest_path_dist(all_giants['us-powergrid']), 'yp', label='us-powergrid')
-#pp.legend(bbox_to_anchor=(1.05,1), loc=2, borderaxespad=0.)
-pp.legend(handles=[p1, p2, p3, p4], loc=1)
-pp.grid(True)
-pp.show()
-pp.clf()
-'''
+    print('done')
 
-print('=> shortest path distributions...')
 
-path_dists = {}
+#
+# local clustering distributions
+#
 
-print('  hamster: ', end='')
-path_dists['hamster'] = shortest_path_dist(all_giants['hamster'])
-print(path_dists['hamster'])
-print('  euroroad: ', end='')
-path_dists['euroroad'] = shortest_path_dist(all_giants['euroroad'])
-print(path_dists['euroroad'])
-print('  us-airports: ', end='')
-path_dists['us-airports'] = shortest_path_dist(all_giants['us-airports'])
-print(path_dists['us-airports'])
-print('  us-powergrid: ', end='')
-path_dists['us-powergrid'] = shortest_path_dist(all_giants['us-powergrid'])
-print(path_dists['us-powergrid'])
+if magic_number & 8 > 0:
+    print('=> local clustering distributions...', end='', flush=True)
 
-print('done')
+    bins = np.linspace(0, 1, 20)
+    pp.title('local clustering distributions')
+    pp.hist(([x for x in all_giants['hamster'].transitivity_local_undirected(mode='zero') if x > 0],
+             [x for x in all_giants['euroroad'].transitivity_local_undirected(mode='zero') if x > 0],
+             [x for x in all_giants['us-airports'].transitivity_local_undirected(mode='zero') if x > 0],
+             [x for x in all_giants['us-powergrid'].transitivity_local_undirected(mode='zero') if x > 0]),
+            bins, alpha=0.7, label=('hamster', 'euroroad', 'us-airports', 'us-powergrid'))
+    pp.legend(loc=1)
+    pp.grid(True)
+    pp.show()
+    pp.clf()
+
+    print('done')
+
+
+#
+# shortest path distributions
+#
+
+if magic_number & 16 > 0:
+    print('=> shortest path distributions...', end='', flush=True)
+
+    all_pds = {}
+    all_pds['hamster'] = shortest_path_dist(all_giants['hamster'])
+    all_pds['euroroad'] = shortest_path_dist(all_giants['euroroad'])
+    all_pds['us-airports'] = shortest_path_dist(all_giants['us-airports'])
+    all_pds['us-powergrid'] = shortest_path_dist(all_giants['us-powergrid'])
+
+    pp.title('shortest path distributions')
+    p1, = pp.plot(all_pds['hamster'][1], lw=2.5, label='hamster')
+    p2, = pp.plot(all_pds['euroroad'][1], lw=2.5, label='euroroad')
+    p3, = pp.plot(all_pds['us-airports'][1], lw=2.5, label='us-airports')
+    p4, = pp.plot(all_pds['us-powergrid'][1], lw=2.5, label='us-powergrid')
+    pp.legend(handles=[p1, p2, p3, p4], loc=1)
+    pp.grid(True)
+    pp.show()
+    pp.clf()
+
+    print('done')
