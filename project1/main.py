@@ -42,18 +42,41 @@ def shortest_path_dist(graph):
     return bins, freqs
 
 
+def stylize_and_plot(ax):
+    ax.spines['top'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_linewidth(1.5)
+    ax.spines['bottom'].set_color(ppcolor2)
+    ax.yaxis.grid(True, which='major', color=ppcolor2, ls='-', lw=1.5)
+    pp.tick_params(axis='y', top='off', length=8, color=ppcolor1, direction='out')
+    pp.tick_params(axis='x', top='off', length=8, color=ppcolor1, direction='out')
+    for tick_label in ax.yaxis.get_ticklabels():
+        tick_label.set_fontsize(12)
+        tick_label.set_fontstyle('italic')
+        tick_label.set_color(ppcolor1)
+    for tick_label in ax.xaxis.get_ticklabels():
+        tick_label.set_fontsize(12)
+        tick_label.set_fontstyle('italic')
+        tick_label.set_color(ppcolor1)
+    pp.show()
+    pp.clf()
+
+
 #
-# what's gonna run?
+# global configs
 #
 
-magic_number = 9
+run_level = 31
+ppcolor1 = '#000088'
+ppcolor2 = '#ccffcc'
 
 
 #
 # read giant components
 #
 
-if magic_number & 1 > 0:
+if run_level & 1 > 0:
     print('=> reading networks... ', end='', flush=True)
 
     all_giants = {}
@@ -83,7 +106,7 @@ if magic_number & 1 > 0:
 # degree distributions
 #
 
-if magic_number & 2 > 0:
+if run_level & 2 > 0:
     print('=> degree distributions, p-law alphas... ', flush=True)
 
     all_dds = {}
@@ -103,17 +126,15 @@ if magic_number & 2 > 0:
     print('  us-powergrid:\n\tpowerlaw alpha: {:.4f}'.format(pl.Fit(all_dds['us-powergrid']).alpha))
     print('\t  igraph alpha: {:.4f}'.format(statistics.power_law_fit(all_dds['us-powergrid']).alpha))
 
-    pp.title('degree distributions')
-    p1, = pp.loglog(all_dds['hamster'], 's', label='hamster')
-    p2, = pp.loglog(all_dds['euroroad'], 'o', label='euroroad')
-    p3, = pp.loglog(all_dds['us-airports'], 'd', label='us-airports')
-    p4, = pp.loglog(all_dds['us-powergrid'], 'p', label='us-powergrid')
-    # pp.legend(bbox_to_anchor=(1.05,1), loc=2, borderaxespad=0.)
-    pp.legend(handles=[p1, p2, p3, p4], loc=1)
-    pp.grid(True)
-    pp.show()
-    pp.clf()
-
+    ax = pp.subplot(111)
+    ax.set_xlabel('Degree', color=ppcolor1, alpha=0.8)
+    ax.set_ylabel('Frequency', color=ppcolor1, alpha=0.8)
+    ax.loglog(all_dds['hamster'], ls='', marker='s', label='hamster')
+    ax.loglog(all_dds['euroroad'], ls='', marker='o', label='euroroad')
+    ax.loglog(all_dds['us-airports'], ls='', marker='d', label='us-airports')
+    ax.loglog(all_dds['us-powergrid'], ls='', marker='p', label='us-powergrid')
+    ax.legend(loc='upper right')
+    stylize_and_plot(ax)
     print('done')
 
 
@@ -121,56 +142,57 @@ if magic_number & 2 > 0:
 # assorted measurements
 #
 
-if magic_number & 4 > 0:
+if run_level & 4 > 0:
     print('=> assorted measurements... ', end='', flush=True)
 
-    table_data = np.zeros((7, 4))
-    col_labels = ('Hamster', 'Euroroad', 'US-airports', 'US-powergrid')
-    row_labels = ('NumberOfNodes', 'MeanDegree', '2ndStatMoment',
-                  'TransitivityLocalAvg', 'TransitivityGlobal',
-                  'ShortestPathAvg', 'Diameter')
+    table_data = np.zeros(7, dtype='a30, f4, f4, f4, f4')
+    col_labels = ('Measurement',
+                  'Net: Hamster',
+                  'Net: Euroroad',
+                  'Net: US Airports',
+                  'Net: US Powergrid')
 
-    table_data[0,0] = len(all_giants['hamster'].vs)
-    table_data[0,1] = len(all_giants['euroroad'].vs)
-    table_data[0,2] = len(all_giants['us-airports'].vs)
-    table_data[0,3] = len(all_giants['us-powergrid'].vs)
+    table_data[0] = ('NumberOfNodes',
+                     len(all_giants['hamster'].vs),
+                     len(all_giants['euroroad'].vs),
+                     len(all_giants['us-airports'].vs),
+                     len(all_giants['us-powergrid'].vs))
+    table_data[1] = ('MeanDegree',
+                     '{:.4f}'.format(stat_moment(all_giants['hamster'], 1)),
+                     '{:.4f}'.format(stat_moment(all_giants['euroroad'], 1)),
+                     '{:.4f}'.format(stat_moment(all_giants['us-airports'], 1)),
+                     '{:.4f}'.format(stat_moment(all_giants['us-powergrid'], 1)))
+    table_data[2] = ('2ndStatMoment',
+                     '{:.4f}'.format(stat_moment(all_giants['hamster'], 2)),
+                     '{:.4f}'.format(stat_moment(all_giants['euroroad'], 2)),
+                     '{:.4f}'.format(stat_moment(all_giants['us-airports'], 2)),
+                     '{:.4f}'.format(stat_moment(all_giants['us-powergrid'], 2)))
+    table_data[3] = ('TransitivityLocalAvg',
+                     '{:.4f}'.format(all_giants['hamster'].transitivity_avglocal_undirected()),
+                     '{:.4f}'.format(all_giants['euroroad'].transitivity_avglocal_undirected()),
+                     '{:.4f}'.format(all_giants['us-airports'].transitivity_avglocal_undirected()),
+                     '{:.4f}'.format(all_giants['us-powergrid'].transitivity_avglocal_undirected()))
+    table_data[4] = ('TransitivityGlobal',
+                     '{:.4f}'.format(all_giants['hamster'].transitivity_undirected()),
+                     '{:.4f}'.format(all_giants['euroroad'].transitivity_undirected()),
+                     '{:.4f}'.format(all_giants['us-airports'].transitivity_undirected()),
+                     '{:.4f}'.format(all_giants['us-powergrid'].transitivity_undirected()))
+    table_data[5] = ('ShortestPathAvg',
+                     '{:.4f}'.format(shortest_path_avg(all_giants['hamster'])),
+                     '{:.4f}'.format(shortest_path_avg(all_giants['euroroad'])),
+                     '{:.4f}'.format(shortest_path_avg(all_giants['us-airports'])),
+                     '{:.4f}'.format(shortest_path_avg(all_giants['us-powergrid'])))
+    table_data[6] = ('Diameter',
+                     all_giants['hamster'].diameter(directed=False),
+                     all_giants['euroroad'].diameter(directed=False),
+                     all_giants['us-airports'].diameter(directed=False),
+                     all_giants['us-powergrid'].diameter(directed=False))
 
-    table_data[1,0] = '{:.4f}'.format(stat_moment(all_giants['hamster'], 1))
-    table_data[1,1] = '{:.4f}'.format(stat_moment(all_giants['euroroad'], 1))
-    table_data[1,2] = '{:.4f}'.format(stat_moment(all_giants['us-airports'], 1))
-    table_data[1,3] = '{:.4f}'.format(stat_moment(all_giants['us-powergrid'], 1))
-
-    table_data[2,0] = '{:.4f}'.format(stat_moment(all_giants['hamster'], 2))
-    table_data[2,1] = '{:.4f}'.format(stat_moment(all_giants['euroroad'], 2))
-    table_data[2,2] = '{:.4f}'.format(stat_moment(all_giants['us-airports'], 2))
-    table_data[2,3] = '{:.4f}'.format(stat_moment(all_giants['us-powergrid'], 2))
-
-    table_data[3,0] = '{:.4f}'.format(all_giants['hamster'].transitivity_avglocal_undirected())
-    table_data[3,1] = '{:.4f}'.format(all_giants['euroroad'].transitivity_avglocal_undirected())
-    table_data[3,2] = '{:.4f}'.format(all_giants['us-airports'].transitivity_avglocal_undirected())
-    table_data[3,3] = '{:.4f}'.format(all_giants['us-powergrid'].transitivity_avglocal_undirected())
-
-    table_data[4,0] = '{:.4f}'.format(all_giants['hamster'].transitivity_undirected())
-    table_data[4,1] = '{:.4f}'.format(all_giants['euroroad'].transitivity_undirected())
-    table_data[4,2] = '{:.4f}'.format(all_giants['us-airports'].transitivity_undirected())
-    table_data[4,3] = '{:.4f}'.format(all_giants['us-powergrid'].transitivity_undirected())
-
-    table_data[5,0] = '{:.4f}'.format(shortest_path_avg(all_giants['hamster']))
-    table_data[5,1] = '{:.4f}'.format(shortest_path_avg(all_giants['euroroad']))
-    table_data[5,2] = '{:.4f}'.format(shortest_path_avg(all_giants['us-airports']))
-    table_data[5,3] = '{:.4f}'.format(shortest_path_avg(all_giants['us-powergrid']))
-
-    table_data[6,0] = all_giants['hamster'].diameter(directed=False)
-    table_data[6,1] = all_giants['euroroad'].diameter(directed=False)
-    table_data[6,2] = all_giants['us-airports'].diameter(directed=False)
-    table_data[6,3] = all_giants['us-powergrid'].diameter(directed=False)
-
-    pp.table(cellText=table_data, rowLabels=row_labels, colLabels=col_labels, loc='center')
+    pp.table(cellText=table_data, colLabels=col_labels, cellLoc='center', loc='center')
     pp.axis('tight')
     pp.axis('off')
     pp.show()
     pp.clf()
-
     print('done')
 
 
@@ -178,7 +200,7 @@ if magic_number & 4 > 0:
 # local clustering distributions
 #
 
-if magic_number & 8 > 0:
+if run_level & 8 > 0:
     print('=> local clustering distributions...', end='', flush=True)
 
     bins = np.linspace(0, 1, 20)
@@ -200,7 +222,7 @@ if magic_number & 8 > 0:
 # shortest path distributions
 #
 
-if magic_number & 16 > 0:
+if run_level & 16 > 0:
     print('=> shortest path distributions...', end='', flush=True)
 
     all_pds = {}
