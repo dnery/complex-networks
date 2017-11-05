@@ -67,11 +67,11 @@ def pearson_r(a, b):
 def fastgreedy_progression(graph):
     optimal_structure = graph.community_fastgreedy()
     optimal_count = optimal_structure.optimal_count
-    x_axis = range(1, optimal_count + 1)
+    x_axis = range(len(graph.vs), optimal_count - 1, -1)
     y_axis = np.zeros(len(x_axis))
-    for i in x_axis:
-        y_axis[i - 1] = optimal_structure.as_clustering(n=i).modularity
-    return x_axis, y_axis, optimal_count
+    for i in range(len(y_axis)):
+        y_axis[i] = optimal_structure.as_clustering(n=x_axis[i]).modularity
+    return list(reversed(x_axis)), y_axis, optimal_count
 
 
 def retrieve_graph_and_clustering(benchmark_executable_path, mixing_param):
@@ -189,19 +189,21 @@ print('done.')
 print('\nFast-greedy steps distribution')
 print('==============================\n')
 
-ax = pp.subplot(111)
 
 print('\nSteps for usAirports network...')
+ax1 = pp.subplot(121)
 x, y, optimal = fastgreedy_progression(g_giants[3])
 print('  optimal count is', optimal)
-ax.plot(x, y, label='usAirports')
+ax1.plot(x, y, label='usAirports')
+stylize_plot(ax1, 'Fast-greedy Step Number', 'Modularity', lloc='lower right')
 
 print('\nSteps for euroroad network...')
+ax2 = pp.subplot(122)
 x, y, optimal = fastgreedy_progression(g_giants[4])
 print('  optimal count is', optimal)
-ax.plot(x, y, label='euroroad')
+ax2.plot(x, y, label='euroroad')
+stylize_plot(ax2, 'Fast-greedy Step Number', 'Modularity', lloc='lower right')
 
-stylize_plot(ax, 'Cluster Count', 'Modularity', lloc='lower right')
 print('done.')
 pp.show()
 pp.clf()
