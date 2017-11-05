@@ -3,4 +3,6 @@ ignore/
 *.bak
 *.pdf
 *.png
+*.zip
+*.dat
 tags

@@ -3,10 +3,12 @@ import numpy as np
 from os import path
 from subprocess import call
 from collections import namedtuple
-from matplotlib import pyplot as pp
+from sklearn.metrics import normalized_mutual_info_score
 
 from igraph import Graph
 from igraph import VertexClustering
+
+from matplotlib import pyplot as pp
 
 
 #
@@ -146,61 +148,60 @@ print(g_names[5], '= {:.4f}'.format(pearson_r(g_giants[5].degree(), knn_x[5])))
 print('done.')
 
 # 4
-if(False):
-    print('\nBest community structure modularities')
-    print('=====================================\n')
+# if(False):
+print('\nBest community structure modularities')
+print('=====================================\n')
 
-    print('\nEdge betweenness...', flush=True)
-    print(g_names[0] + ' = ' + '{:.4f}'.format(g_giants[0].community_edge_betweenness(directed=False).as_clustering().modularity))
-    print(g_names[1] + ' = ' + '{:.4f}'.format(g_giants[1].community_edge_betweenness(directed=False).as_clustering().modularity))
-    print(g_names[2] + ' = ' + '{:.4f}'.format(g_giants[2].community_edge_betweenness(directed=False).as_clustering().modularity))
-    print(g_names[3] + ' = ' + '{:.4f}'.format(g_giants[3].community_edge_betweenness(directed=False).as_clustering().modularity))
-    print(g_names[4] + ' = ' + '{:.4f}'.format(g_giants[4].community_edge_betweenness(directed=False).as_clustering().modularity))
-    print(g_names[5] + ' = ' + '{:.4f}'.format(g_giants[5].community_edge_betweenness(directed=False).as_clustering().modularity))
+print('\nEdge betweenness...', flush=True)
+print(g_names[0] + ' = ' + '{:.4f}'.format(g_giants[0].community_edge_betweenness(directed=False).as_clustering().modularity))
+print(g_names[1] + ' = ' + '{:.4f}'.format(g_giants[1].community_edge_betweenness(directed=False).as_clustering().modularity))
+print(g_names[2] + ' = ' + '{:.4f}'.format(g_giants[2].community_edge_betweenness(directed=False).as_clustering().modularity))
+# print(g_names[3] + ' = ' + '{:.4f}'.format(g_giants[3].community_edge_betweenness(directed=False).as_clustering().modularity))
+print(g_names[4] + ' = ' + '{:.4f}'.format(g_giants[4].community_edge_betweenness(directed=False).as_clustering().modularity))
+# print(g_names[5] + ' = ' + '{:.4f}'.format(g_giants[5].community_edge_betweenness(directed=False).as_clustering().modularity))
 
-    print('\nFastGreedy algorithm...', flush=True)
-    print(g_names[0] + ' = ' + '{:.4f}'.format(g_giants[0].community_fastgreedy().as_clustering().modularity))
-    print(g_names[1] + ' = ' + '{:.4f}'.format(g_giants[1].community_fastgreedy().as_clustering().modularity))
-    print(g_names[2] + ' = ' + '{:.4f}'.format(g_giants[2].community_fastgreedy().as_clustering().modularity))
-    print(g_names[3] + ' = ' + '{:.4f}'.format(g_giants[3].community_fastgreedy().as_clustering().modularity))
-    print(g_names[4] + ' = ' + '{:.4f}'.format(g_giants[4].community_fastgreedy().as_clustering().modularity))
-    print(g_names[5] + ' = ' + '{:.4f}'.format(g_giants[5].community_fastgreedy().as_clustering().modularity))
+print('\nFastGreedy algorithm...', flush=True)
+print(g_names[0] + ' = ' + '{:.4f}'.format(g_giants[0].community_fastgreedy().as_clustering().modularity))
+print(g_names[1] + ' = ' + '{:.4f}'.format(g_giants[1].community_fastgreedy().as_clustering().modularity))
+print(g_names[2] + ' = ' + '{:.4f}'.format(g_giants[2].community_fastgreedy().as_clustering().modularity))
+print(g_names[3] + ' = ' + '{:.4f}'.format(g_giants[3].community_fastgreedy().as_clustering().modularity))
+print(g_names[4] + ' = ' + '{:.4f}'.format(g_giants[4].community_fastgreedy().as_clustering().modularity))
+print(g_names[5] + ' = ' + '{:.4f}'.format(g_giants[5].community_fastgreedy().as_clustering().modularity))
 
-    print('\nLeading eigenvectors...', flush=True)
-    print(g_names[0] + ' = ' + '{:.4f}'.format(g_giants[0].community_leading_eigenvector().modularity))
-    print(g_names[1] + ' = ' + '{:.4f}'.format(g_giants[1].community_leading_eigenvector().modularity))
-    print(g_names[2] + ' = ' + '{:.4f}'.format(g_giants[2].community_leading_eigenvector().modularity))
-    print(g_names[3] + ' = ' + '{:.4f}'.format(g_giants[3].community_leading_eigenvector().modularity))
-    print(g_names[4] + ' = ' + '{:.4f}'.format(g_giants[4].community_leading_eigenvector().modularity))
-    print(g_names[5] + ' = ' + '{:.4f}'.format(g_giants[5].community_leading_eigenvector().modularity))
+print('\nLeading eigenvectors...', flush=True)
+print(g_names[0] + ' = ' + '{:.4f}'.format(g_giants[0].community_leading_eigenvector().modularity))
+print(g_names[1] + ' = ' + '{:.4f}'.format(g_giants[1].community_leading_eigenvector().modularity))
+print(g_names[2] + ' = ' + '{:.4f}'.format(g_giants[2].community_leading_eigenvector().modularity))
+print(g_names[3] + ' = ' + '{:.4f}'.format(g_giants[3].community_leading_eigenvector().modularity))
+print(g_names[4] + ' = ' + '{:.4f}'.format(g_giants[4].community_leading_eigenvector().modularity))
+print(g_names[5] + ' = ' + '{:.4f}'.format(g_giants[5].community_leading_eigenvector().modularity))
 
-    print('\nWalktrap...', flush=True)
-    print(g_names[0] + ' = ' + '{:.4f}'.format(g_giants[0].community_walktrap(steps=10).as_clustering().modularity))
-    print(g_names[1] + ' = ' + '{:.4f}'.format(g_giants[1].community_walktrap(steps=10).as_clustering().modularity))
-    print(g_names[2] + ' = ' + '{:.4f}'.format(g_giants[2].community_walktrap(steps=10).as_clustering().modularity))
-    print(g_names[3] + ' = ' + '{:.4f}'.format(g_giants[3].community_walktrap(steps=10).as_clustering().modularity))
-    print(g_names[4] + ' = ' + '{:.4f}'.format(g_giants[4].community_walktrap(steps=10).as_clustering().modularity))
-    print(g_names[5] + ' = ' + '{:.4f}'.format(g_giants[5].community_walktrap(steps=10).as_clustering().modularity))
-    print('done.')
+print('\nWalktrap...', flush=True)
+print(g_names[0] + ' = ' + '{:.4f}'.format(g_giants[0].community_walktrap(steps=10).as_clustering().modularity))
+print(g_names[1] + ' = ' + '{:.4f}'.format(g_giants[1].community_walktrap(steps=10).as_clustering().modularity))
+print(g_names[2] + ' = ' + '{:.4f}'.format(g_giants[2].community_walktrap(steps=10).as_clustering().modularity))
+print(g_names[3] + ' = ' + '{:.4f}'.format(g_giants[3].community_walktrap(steps=10).as_clustering().modularity))
+print(g_names[4] + ' = ' + '{:.4f}'.format(g_giants[4].community_walktrap(steps=10).as_clustering().modularity))
+print(g_names[5] + ' = ' + '{:.4f}'.format(g_giants[5].community_walktrap(steps=10).as_clustering().modularity))
+print('done.')
 
 # 5
 print('\nFast-greedy steps distribution')
 print('==============================\n')
 
+ax = pp.subplot(111)
+
 print('\nSteps for usAirports network...')
 x, y, optimal = fastgreedy_progression(g_giants[3])
 print('  optimal count is', optimal)
-ax1 = pp.subplot(121)
-ax1.plot(x, y, label='usAirports')
-stylize_plot(ax1, 'Cluster Count', 'Modularity', lloc='lower right')
+ax.plot(x, y, label='usAirports')
 
 print('\nSteps for euroroad network...')
 x, y, optimal = fastgreedy_progression(g_giants[4])
 print('  optimal count is', optimal)
-ax2 = pp.subplot(122)
-ax2.plot(x, y, label='euroroad')
-stylize_plot(ax2, 'Cluster Count', 'Modularity', lloc='lower right')
+ax.plot(x, y, label='euroroad')
 
+stylize_plot(ax, 'Cluster Count', 'Modularity', lloc='lower right')
 print('done.')
 pp.show()
 pp.clf()
@@ -210,11 +211,10 @@ print('\nCommunity finding algorithms comparison')
 print('=======================================\n')
 
 x_axis = np.linspace(0.1, 1.0, 10)
-mods_leading_eigenvector = []
-mods_edge_betweenness = []
-mods_fastgreedy = []
-mods_walktrap = []
-mods_real = []
+nmi_leading_eigenvector = []
+nmi_edge_betweenness = []
+nmi_fastgreedy = []
+nmi_walktrap = []
 for param in x_axis:
     # run external program
     call(['./binary_networks/benchmark', '-N', '250', '-k', '7', '-maxk', '30', '-mu', str(param)])
@@ -226,19 +226,17 @@ for param in x_axis:
     graph.delete_vertices(0)
     graph.simplify()
     # retrieve real and calculated modularities
-    mods_real.append(graph.modularity(memberships))
-    mods_fastgreedy.append(graph.community_fastgreedy().as_clustering().modularity)
-    mods_leading_eigenvector.append(graph.community_leading_eigenvector().modularity)
-    mods_walktrap.append(graph.community_walktrap(steps=10).as_clustering().modularity)
-    mods_edge_betweenness.append(graph.community_edge_betweenness(directed=False).as_clustering().modularity)
+    nmi_fastgreedy.append(normalized_mutual_info_score(memberships, graph.community_fastgreedy().as_clustering().membership))
+    nmi_leading_eigenvector.append(normalized_mutual_info_score(memberships, graph.community_leading_eigenvector().membership))
+    nmi_edge_betweenness.append(normalized_mutual_info_score(memberships, graph.community_edge_betweenness(directed=False).as_clustering().membership))
+    nmi_walktrap.append(normalized_mutual_info_score(memberships, graph.community_walktrap(steps=10).as_clustering().membership))
 
 ax = pp.subplot(111)
-ax.plot(x_axis, mods_real, label='real')
-ax.plot(x_axis, mods_walktrap, label='walktrap')
-ax.plot(x_axis, mods_fastgreedy, label='fastgreedy')
-ax.plot(x_axis, mods_edge_betweenness, label='edgeBetweenness')
-ax.plot(x_axis, mods_leading_eigenvector, label='leadingEigenvector')
-stylize_plot(ax, 'Mixing Parameter', 'Current Clustering Modularity')
+ax.plot(x_axis, nmi_walktrap, label='walktrap')
+ax.plot(x_axis, nmi_fastgreedy, label='fastgreedy')
+ax.plot(x_axis, nmi_edge_betweenness, label='edgeBetweenness')
+ax.plot(x_axis, nmi_leading_eigenvector, label='leadingEigenvector')
+stylize_plot(ax, 'Mixing Parameter', 'NMI (Real Communities vs Algorithms)')
 print('done.')
 pp.show()
 pp.clf()
