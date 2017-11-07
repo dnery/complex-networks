@@ -98,7 +98,7 @@ def make_distribution(data, bins):
     return list(map(lambda x: x/n_vals, dist))
 
 
-def stylize_plot(ax, grid=True):
+def stylize_plot(ax, xlab, ylab, title='', lloc='upper right', grid=True):
     ax.spines['top'].set_visible(False)
     ax.spines['left'].set_visible(False)
     ax.spines['right'].set_visible(False)
@@ -116,6 +116,11 @@ def stylize_plot(ax, grid=True):
         tick_label.set_fontsize(20)
         tick_label.set_fontstyle('italic')
         tick_label.set_color(ppcolor1)
+    if (title != ''):
+        ax1.set_title(title, color=ppcolor1, alpha=0.8, fontsize=20)
+    ax.set_xlabel(xlab, color=ppcolor1, alpha=0.8, fontsize=20)
+    ax.set_ylabel(ylab, color=ppcolor1, alpha=0.8, fontsize=20)
+    ax.legend(loc=lloc, prop={'size': 20})
 
 
 #
@@ -164,7 +169,7 @@ print('done')
 # degree distributions
 #
 
-print('degree distributions, p-law alphas', flush=True)
+print('degree distributions, p-law alphas...', flush=True)
 
 all_dds = {}
 n_nodes = len(all_giants['hamster'].vs)
@@ -192,10 +197,7 @@ ax.loglog(all_dds['hamster'], ls='', marker='s', label='hamster')
 ax.loglog(all_dds['euroroad'], ls='', marker='o', label='euroroad')
 ax.loglog(all_dds['us-airports'], ls='', marker='d', label='us-airports')
 ax.loglog(all_dds['us-powergrid'], ls='', marker='p', label='us-powergrid')
-ax.set_ylabel('Probability', color=ppcolor1, alpha=0.8, fontsize=20)
-ax.set_xlabel('Degree', color=ppcolor1, alpha=0.8, fontsize=20)
-ax.legend(loc='upper right', prop={'size': 20})
-stylize_plot(ax)
+stylize_plot(ax, 'Degree', 'Probability')
 pp.show()
 pp.clf()
 print('done')
@@ -275,10 +277,7 @@ ax.plot(bins, cumulative_cci_dist(all_giants['hamster'], bins), linewidth=2, lab
 ax.plot(bins, cumulative_cci_dist(all_giants['euroroad'], bins), linewidth=2, label='euroroad')
 ax.plot(bins, cumulative_cci_dist(all_giants['us-airports'], bins), linewidth=2, label='us-airports')
 ax.plot(bins, cumulative_cci_dist(all_giants['us-powergrid'], bins), linewidth=2, label='us-powergrid')
-ax.set_ylabel('Cumulative Probability', color=ppcolor1, alpha=0.8, fontsize=20)
-ax.set_xlabel('Local Transitivity', color=ppcolor1, alpha=0.8, fontsize=20)
-ax.legend(loc='lower right', prop={'size': 20})
-stylize_plot(ax, False)
+stylize_plot(ax, 'Local Transitivity', 'Cumulative Probability', lloc='lower right', grid=False)
 pp.show()
 pp.clf()
 print('done')
@@ -301,10 +300,7 @@ ax.plot(all_pds['hamster'][1], lw=2.5, alpha=0.8, label='hamster')
 ax.plot(all_pds['euroroad'][1], lw=2.5, alpha=0.8, label='euroroad')
 ax.plot(all_pds['us-airports'][1], lw=2.5, alpha=0.8, label='us-airports')
 ax.plot(all_pds['us-powergrid'][1], lw=2.5, alpha=0.8, label='us-powergrid')
-ax.set_xlabel('Shortest Path Length', color=ppcolor1, alpha=0.8, fontsize=20)
-ax.set_ylabel('Probability', color=ppcolor1, alpha=0.8, fontsize=20)
-ax.legend(loc='upper right', prop={'size': 20})
-stylize_plot(ax)
+stylize_plot(ax, 'Sortest Path Length', 'Probability')
 pp.show()
 pp.clf()
 print('done')
@@ -315,7 +311,7 @@ print('done')
 #
 
 # first, calculate all distributions
-print('centrality measurements', flush=True)
+print('centrality measurements...', flush=True)
 
 all_cents = {}
 all_cents['hamster'] = {}
@@ -406,13 +402,9 @@ ax1.hist((all_cents['hamster']['closeness'],
           all_cents['hamster']['eigenvector'],
           all_cents['hamster']['pagerank']),
          bins, label=('closeness', 'betweenness', 'eigenvector', 'pagerank'))
-ax1.set_xlabel('Normalized Centralities', color=ppcolor1, alpha=0.8, fontsize=20)
-ax1.set_ylabel('Frequency', color=ppcolor1, alpha=0.8, fontsize=20)
-ax1.set_title('Hamster', color=ppcolor1, alpha=0.8, fontsize=20)
-ax1.legend(loc='upper center')
+stylize_plot(ax1, 'Normalized Centralities', 'Frequency', 'Hamster', lloc='upper center', grid=False)
 ax1.set_yscale('log')
 ax1.set_xscale('log')
-stylize_plot(ax1, False)
 
 # 2
 ax2 = pp.subplot(222)
@@ -421,13 +413,9 @@ ax2.hist((all_cents['euroroad']['closeness'],
           all_cents['euroroad']['eigenvector'],
           all_cents['euroroad']['pagerank']),
          bins, label=('closeness', 'betweenness', 'eigenvector', 'pagerank'))
-ax2.set_xlabel('Normalized Centralities', color=ppcolor1, alpha=0.8, fontsize=20)
-ax2.set_ylabel('Frequency', color=ppcolor1, alpha=0.8, fontsize=20)
-ax2.set_title('Euroroad', color=ppcolor1, alpha=0.8, fontsize=20)
-ax2.legend(loc='upper center')
-ax2.set_yscale('log')
-ax2.set_xscale('log')
-stylize_plot(ax2, False)
+stylize_plot(ax2, 'Normalized Centralities', 'Frequency', 'Euroroad', lloc='upper center', grid=False)
+ax1.set_yscale('log')
+ax1.set_xscale('log')
 
 # 3
 ax3 = pp.subplot(223)
@@ -436,13 +424,9 @@ ax3.hist((all_cents['us-airports']['closeness'],
           all_cents['us-airports']['eigenvector'],
           all_cents['us-airports']['pagerank']),
          bins, label=('closeness', 'betweenness', 'eigenvector', 'pagerank'))
-ax3.set_xlabel('Normalized Centralities', color=ppcolor1, alpha=0.8, fontsize=20)
-ax3.set_ylabel('Frequency', color=ppcolor1, alpha=0.8, fontsize=20)
-ax3.set_title('US Airports', color=ppcolor1, alpha=0.8, fontsize=20)
-ax3.legend(loc='upper center')
-ax3.set_yscale('log')
-ax3.set_xscale('log')
-stylize_plot(ax3, False)
+stylize_plot(ax3, 'Normalized Centralities', 'Frequency', 'US Airports', lloc='upper center', grid=False)
+ax1.set_yscale('log')
+ax1.set_xscale('log')
 
 # 4
 ax4 = pp.subplot(224)
@@ -451,13 +435,9 @@ ax4.hist((all_cents['us-powergrid']['closeness'],
           all_cents['us-powergrid']['eigenvector'],
           all_cents['us-powergrid']['pagerank']),
          bins, label=('closeness', 'betweenness', 'eigenvector', 'pagerank'))
-ax4.set_xlabel('Normalized Centralities', color=ppcolor1, alpha=0.8, fontsize=20)
-ax4.set_ylabel('Frequency', color=ppcolor1, alpha=0.8, fontsize=20)
-ax4.set_title('US Powergrid', color=ppcolor1, alpha=0.8, fontsize=20)
-ax4.legend(loc='upper left')
-ax4.set_yscale('log')
-ax4.set_xscale('log')
-stylize_plot(ax4, False)
+stylize_plot(ax3, 'Normalized Centralities', 'Frequency', 'US Powergrid', lloc='upper left', grid=False)
+ax1.set_yscale('log')
+ax1.set_xscale('log')
 
 pp.tight_layout()
 pp.show()

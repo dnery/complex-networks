@@ -71,18 +71,12 @@ def fastgreedy_progression(graph):
     y_axis = np.zeros(len(x_axis))
     for i in range(len(y_axis)):
         y_axis[i] = optimal_structure.as_clustering(n=x_axis[i]).modularity
-    return list(reversed(x_axis)), y_axis, optimal_count
+    # make x_axis be step numbers instead of cluster counts
+    minx = min(x_axis)
+    revx = reversed(x_axis)
+    x_as_steps = list(map(lambda x: x - minx, revx)) 
+    return x_as_steps, y_axis, optimal_count
 
-
-def retrieve_graph_and_clustering(benchmark_executable_path, mixing_param):
-    call([str(benchmark_executable_path), '-N', '250', '-k', '7', '-maxk', '30', '-mu', str(mixing_param)])
-    with open('network.dat', 'rb') as g_file:
-        graph = Graph.Read_Edgelist(g_file, directed=False)
-    with open('community.dat', 'rb') as c_file:
-        memberships = [int(line.split()[1]) for line in c_file]
-    graph.delete_vertices(0)
-    graph.simplify()
-    return graph, memberships
 
 #
 # global configs
@@ -121,31 +115,39 @@ print(g_names[2], '= {:.4f}'.format(g_giants[2].assortativity_degree()))
 print(g_names[3], '= {:.4f}'.format(g_giants[3].assortativity_degree()))
 print(g_names[4], '= {:.4f}'.format(g_giants[4].assortativity_degree()))
 print(g_names[5], '= {:.4f}'.format(g_giants[5].assortativity_degree()))
-print('done.')
+print('done')
 
 # 2
-knn_x = []
-ax = pp.subplot(111)
+all_knn_x = []
 for i_giant in range(len(g_giants)):
     knn_tuple = g_giants[i_giant].knn()
-    knn_x.append(knn_tuple[0])
+    # k X knn(k)
     knn_k = knn_tuple[1]
     k = range(1, len(knn_k) + 1)
-    ax.plot(k, knn_k, ls='', marker='o', label=g_names[i_giant])
-stylize_plot(ax, 'Degree k', 'knn(k)')
+    # k(x) X knn(x)
+    knn_x = knn_tuple[0]
+    all_knn_x.append(knn_x)
+    x = g_giants[i_giant].degree()
+    # build plot
+    layout = '23' + str(i_giant + 1)
+    ax = pp.subplot(int(layout))
+    ax.set_title(g_names[i_giant], color=ppcolor1, alpha=0.8, fontsize=20)
+    ax.scatter(x, knn_x, facecolors='none', edgecolors='r', label='knn(node)')
+    ax.plot(k, knn_k, ls='-', marker='o', label='knn(degree)')
+    stylize_plot(ax, 'Degree', 'knn')
 pp.show()
 pp.clf()
 
 # 3
 print('\nCorrelations (k(x) with knn(x))')
 print('===============================\n')
-print(g_names[0], '= {:.4f}'.format(pearson_r(g_giants[0].degree(), knn_x[0])))
-print(g_names[1], '= {:.4f}'.format(pearson_r(g_giants[1].degree(), knn_x[1])))
-print(g_names[2], '= {:.4f}'.format(pearson_r(g_giants[2].degree(), knn_x[2])))
-print(g_names[3], '= {:.4f}'.format(pearson_r(g_giants[3].degree(), knn_x[3])))
-print(g_names[4], '= {:.4f}'.format(pearson_r(g_giants[4].degree(), knn_x[4])))
-print(g_names[5], '= {:.4f}'.format(pearson_r(g_giants[5].degree(), knn_x[5])))
-print('done.')
+print(g_names[0], '= {:.4f}'.format(pearson_r(g_giants[0].degree(), all_knn_x[0])))
+print(g_names[1], '= {:.4f}'.format(pearson_r(g_giants[1].degree(), all_knn_x[1])))
+print(g_names[2], '= {:.4f}'.format(pearson_r(g_giants[2].degree(), all_knn_x[2])))
+print(g_names[3], '= {:.4f}'.format(pearson_r(g_giants[3].degree(), all_knn_x[3])))
+print(g_names[4], '= {:.4f}'.format(pearson_r(g_giants[4].degree(), all_knn_x[4])))
+print(g_names[5], '= {:.4f}'.format(pearson_r(g_giants[5].degree(), all_knn_x[5])))
+print('done')
 
 # 4
 # if(False):
@@ -183,11 +185,11 @@ print(g_names[2] + ' = ' + '{:.4f}'.format(g_giants[2].community_walktrap(steps=
 print(g_names[3] + ' = ' + '{:.4f}'.format(g_giants[3].community_walktrap(steps=10).as_clustering().modularity))
 print(g_names[4] + ' = ' + '{:.4f}'.format(g_giants[4].community_walktrap(steps=10).as_clustering().modularity))
 print(g_names[5] + ' = ' + '{:.4f}'.format(g_giants[5].community_walktrap(steps=10).as_clustering().modularity))
-print('done.')
+print('done')
 
 # 5
-print('\nFast-greedy steps distribution')
-print('==============================\n')
+print('\nFast-greedy steps progression')
+print('=============================\n')
 
 
 print('\nSteps for usAirports network...')
@@ -204,7 +206,7 @@ print('  optimal count is', optimal)
 ax2.plot(x, y, label='euroroad')
 stylize_plot(ax2, 'Fast-greedy Step Number', 'Modularity', lloc='lower right')
 
-print('done.')
+print('done')
 pp.show()
 pp.clf()
 
@@ -219,7 +221,7 @@ nmi_fastgreedy = []
 nmi_walktrap = []
 for param in x_axis:
     # run external program
-    call(['./binary_networks/benchmark', '-N', '250', '-k', '7', '-maxk', '30', '-mu', str(param)])
+    call(['./binary_networks/benchmark', '-N', '500', '-k', '15', '-maxk', '50', '-mu', str(param)])
     # retrieve graph and memberships
     with open('network.dat', 'rb') as g_file:
         graph = Graph.Read_Edgelist(g_file, directed=False)
@@ -227,7 +229,7 @@ for param in x_axis:
         memberships = [int(line.split()[1]) for line in c_file]
     graph.delete_vertices(0)
     graph.simplify()
-    # retrieve real and calculated modularities
+    # compare real and calculated modularities
     nmi_fastgreedy.append(normalized_mutual_info_score(memberships, graph.community_fastgreedy().as_clustering().membership))
     nmi_leading_eigenvector.append(normalized_mutual_info_score(memberships, graph.community_leading_eigenvector().membership))
     nmi_edge_betweenness.append(normalized_mutual_info_score(memberships, graph.community_edge_betweenness(directed=False).as_clustering().membership))
@@ -239,6 +241,6 @@ ax.plot(x_axis, nmi_fastgreedy, label='fastgreedy')
 ax.plot(x_axis, nmi_edge_betweenness, label='edgeBetweenness')
 ax.plot(x_axis, nmi_leading_eigenvector, label='leadingEigenvector')
 stylize_plot(ax, 'Mixing Parameter', 'NMI (Real Communities vs Algorithms)')
-print('done.')
+print('done')
 pp.show()
 pp.clf()

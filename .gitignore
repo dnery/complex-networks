@@ -1,8 +1,8 @@
-ignore/
+.vscode/
 .idea/
 *.bak
 *.pdf
-*.png
 *.zip
 *.dat
 tags
+ignore/
